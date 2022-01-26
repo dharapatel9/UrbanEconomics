@@ -1,0 +1,182 @@
+---
+title: |
+  ![](ILlogo.jpg){width=.2in}
+  
+  | ECON 414: Urban Economics
+  
+  | Homework 1
+author: "Dhara Patel (dpate235)"
+date: '9/14/2020'
+output:
+  pdf_document:
+    extra_dependencies: ["cancel", "amsmath", "amssymb"]
+    toc: yes
+    toc_depth: 2
+geometry: margin=1.2in
+urlcolor: blue
+fontfamily: mathpazo
+fontsize: 11pt
+header-includes:
+   - \linespread{1.05}
+---
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(include = TRUE)  # TRUE for solution; FALSE for questions set
+  knitr::opts_chunk$set(echo = TRUE)
+  knitr::opts_chunk$set(message = FALSE)
+  knitr::opts_chunk$set(warning = FALSE)
+  knitr::opts_chunk$set(fig.height = 8, fig.width = 11, out.width = '60%', fig.align = "center")
+  options(width = 90)
+```
+
+```{css, echo=FALSE}
+.solution {
+background-color: #CCDDFF;
+}
+```
+
+In this homework, we'll use data from Chicago-IL communities. The source is the [GeoDa Data and Lab](https://geodacenter.github.io/data-and-lab/). The first dataset [Airbnb](https://github.com/guerramarcelino/UrbanEconomics/raw/master/Datasets/airbnb.RDS) refers to Airbnb rentals, socioeconomic indicators, and crime by community area in Chicago. The [Communities](https://github.com/guerramarcelino/UrbanEconomics/raw/master/Datasets/communities.xls) dataset contains health and socioeconomic indicators for the 77 community areas of Chicago, 2012-2014. You can find more information about the `Airbnb` and `Communities` data [here](https://geodacenter.github.io/data-and-lab//airbnb_Chicago-2015/) and [here](https://geodacenter.github.io/data-and-lab//comarea_vars/), respectively.
+
+a. [5 points] Import both datasets and use the function `head()` **to see only the first three rows** from each one. [This](https://readxl.tidyverse.org/) might help you to import the `Communities` data.   
+
+```{r, include=T}
+airbnb<-readRDS("airbnb.RDS")
+head(airbnb,3)
+
+library("readxl")
+communities<-read_excel("communities.xls")
+head(communities,3)
+
+```
+
+b. [5 points]  Merge the datasets using the function `full_join()`. What is the dimension of your new dataset? What variables do they have in common (variables with the same column name)?  
+
+```{r, include=T}
+library(dplyr)
+full_data<-dplyr::full_join(airbnb, communities,by = "community")
+dim(full_data)
+#print(full_data)
+```
+
+The two datasets have the shape area and shape len variables in common. 
+
+## Question 2 [50 Points] Subsetting/Filtering data & new variables
+
+a. [5 points] Now you want to work only with the following variables: `community`, `price_pp`, `num_spots`, `rev_rating`, `PerCInc14` , `population`, `num_crimes` ,`unemployed`, #`hardship_in`, `Pop2014`, #`Birthrate`, `Over65`. Create a new `data.frame` selecting those variables.
+
+```{r, include=T}
+full_data%>% select("community", "price_pp", "num_spots", "rev_rating", "PerCInc14" , "population", "num_crimes" ,"unemployed", "Pop2014", "Over65", "harship_in", "BirthRate")
+#print(airbnb)
+#print(communities)
+```
+b. [5 points] Create the new variable `crime_rate` dividing the total number of crimes by the **population in 2014**.
+
+```{r, include=T}
+#print(full_data)
+sapply(full_data, class)
+full_data$num_crimes <- as.numeric(as.character(full_data$num_crimes))  # Convert one variable to numeric
+sapply(full_data, class)
+full_data$Pop2014 <- as.numeric(as.character(full_data$Pop2014))  # Convert one variable to numeric
+sapply(full_data, class)
+full_data$crime_rate<-full_data$"num_crimes"/full_data$"Pop2014"
+head(full_data$crime_rate)
+
+```
+
+
+c. [15 points] Filter your new dataset to identify **Central Chicago**. In other words, you want to select the following communities: `NEAR NORTH SIDE`, `NEAR SOUTH SIDE`, or `LOOP`. What is the average number of Airbnb spots in Central Chicago? What are the average Airbnb prices, per capita income, crime rate, and birth rate in Central Chicago?
+
+```{r, include=T}
+library(dplyr)
+full_data %>% slice(34,37,38)
+```
+The average number of airbnb spots in Central Chicago is about 278. The average airbnb price is 150.34. The average per capita income, crime rate, and birth rate are as follows: 714819.3, 38731, 13.83.
+
+d. [15 points] Compare those numbers (Airbnb spots and prices, income, crime, and birth rate) in Central Chicago with the values from Central Chicago adjacent communities - communities that share a border with Central Chicago. Discuss the results.  
+
+```{r, include=T}
+library(dplyr)
+full_data %>% slice(1,25,29,33,35,68)
+```
+Average spots: about 262.8
+Average price: about 99.5
+Average income: 35970.17
+Average Crime:about 8601.17
+Average Birth Rate: 14.75
+
+Compared to Central Chicago, these Central Chicago locations have less airbnb spots and and the price drops drastically. The price of the Central Chicago spots are most likely high due to a higher income per capita and the overall area is a bit more costly. The crime rate decreases drastically in these adjacent locations and the birth rate is not significantly different. Most likely, these Central Chicago locations are more popular as these are the areas where more of the attractions are and therefore, people will choose those airbnbs. 
+
+e. [10 points] Finally, compare the values for the same variables in Central Chicago with the average numbers from "Far from downtown" - the communities with numbers equal to 1, 2, 9, 10, 11, 12, 13, 51, 52, 54, 55. Discuss the results.
+
+```{r, include=T}
+library(dplyr)
+full_data %>% slice(2,3,10,11,12,13,52,53,55,56)
+full_data%>% select("community", "price_pp", "num_spots", "PerCInc14" , "num_crimes", "BirthRate")
+#print(airbnb)
+#print(communities)
+```
+average number of crimes: 4411.2
+average airbnbs: 50.7
+average price: 81.89
+average birth rate: 14.38
+average income: 229200.4
+
+Most likely for similar reasons to why the adjacent communties were lower in income, airbnb spots, and airbnb prices and income remained lower than in Central Chicago. We are even getting further from the attractions the city has to offer and therefore, no one is really looking for airbnbs out this far. 
+
+## Question 3 [30 Points] Scatter plots
+
+a. [15 points] Let's take a look at the relationship between **crime rate** and Airbnb prices. Construct a scatter plot between those variables (y-axis Airbnb prices and x-axis crime rate). What do you see? What might other variables in your dataset be correlated with the crime rate and possibly impact Airbnb prices? 
+```{r, include=T}
+library(ggplot2)
+ggplot(full_data, aes(x=crime_rate, y=price_pp)) + geom_point(color="blue") 
+ 
+```
+Crime rate and the price of an airbnb don't seem to have a causal or correlational relationship. Other factors that may have an impact on crime rate and airbnb prices is income per capita. Higher income places tend to have less crime in general and with higher income the quality of airbnbs increases, therefore there are able to raise prices as well. 
+
+In [lab session 2](https://guerramarcelino.github.io/Econ414/lab2) we saw the strong and positive relationship between the share of the population living in urban areas (%) and the GDP per capita (U$ 2011) for 164 selected countries. Now, we want to establish a relationship between employment in the rural sector and the urban population.
+
+b. [15 points] Construct a scatter plot to show the relationship between urbanization and employment in the rural sector using information from Our World in Data [(here)](https://github.com/guerramarcelino/UrbanEconomics/raw/master/Datasets/agri_urban.xls), in 2015. **Explore the potential channels between jobs in agriculture, urbanization, and GDP per capita**. [Here](https://ourworldindata.org/structural-transformation-and-deindustrialization-evidence-from-todays-rich-countries), you find a pleasant reading that might help you make your case.    
+
+As cities and countries become more urbanized, there is a pattern of shifting from the agriculture sector to the manufacturing sector and then to the ervice sectors. This is due partly to the fact that the agriculture sector has a tendency to be the least productive sector in most economies. These differences in productivity growth are the key as to why this shift occurred rather than a drop in output or a "dynamic" manufacturing/service sector. Therefore, due to urbanization, countries now have increasingly smaller and smaller portions of their GDP attributed to agriculture and that has been the case for a while. 
+
+```{r, include=T}
+library("readxl")
+agri_urban<-read_excel("agri_urban.xls")
+library(ggplot2)
+ggplot(full_data, aes(x=crime_rate, y=price_pp)) + geom_point(color="red") 
+ 
+```
+
+## Question 4 [25 Points] Working with tidycensus
+
+a. [10 points] To get started with `tidycensus`, you need to install the package and set a Census API key. Use this link [(here)](https://api.census.gov/data/key_signup.html) to request a key. You can use "University of Illinois at Urbana-Champaign" as an organization and your student account as an email address. After that, use `census_api_key("your_api_number_goes_here", install =TRUE)` and you are set. Get and load your API number. Then, check the variables for the American Community Survey 3-year estimates for 2010 (load the variables and use `head()` to see the frist 5 variables).          
+
+```{r, include=T}
+library(tidycensus)
+#census_api_key("512780643feef1f0d9d11a9f6171250e21551f71", install =TRUE)
+variables<- load_variables(year = 2010, dataset = "acs5")
+head(variables,5)
+```
+
+b. [15 extra points] Calculate the median gross rent growth per state between 1990 and 2010 using Census data. Arrange your data so we can see which ones had the highest growth and decline in median rent between that period. [Here](https://walker-data.com/tidycensus/articles/basic-usage.html) and [here](https://dcl-wrangle.stanford.edu/census.html) you can find more about the `tidycensus` package.
+```{r, include=T}
+require("tidycensus")
+census_api_key("512780643feef1f0d9d11a9f6171250e21551f71",overwrite=TRUE)
+var09=load_variables(year="2009","acs5")
+var18=load_variables(year="2018","acs5")
+View(var09)
+View(var18)
+df_acs <-
+  get_acs(
+    geography = "state", 
+    variables = "B25071_001", 
+    year = 2009
+  )
+df_acs <-
+  get_acs(
+    geography = "state", 
+    variables = "B25071_001", 
+    year = 2018
+  )
+```
+
