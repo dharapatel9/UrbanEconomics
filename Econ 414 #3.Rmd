@@ -1,0 +1,299 @@
+---
+title: | 
+  ![](ILlogo.jpg){width=.2in}
+  
+  | ECON 414: Urban Economics
+  
+  | Homework 3
+author: "Dhara Patel (dpate235)"
+date: '11/02/2020'
+output:
+  pdf_document:
+    extra_dependencies: ["cancel", "amsmath", "amssymb", "float"]
+    toc: yes
+    toc_depth: 2
+geometry: margin=1.2in
+urlcolor: blue
+fontfamily: mathpazo
+fontsize: 11pt
+header-includes:
+   - \linespread{1.05}
+---
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(include = TRUE)  # TRUE for solution; FALSE for questions set
+  knitr::opts_chunk$set(echo = TRUE)
+  knitr::opts_chunk$set(message = FALSE)
+  knitr::opts_chunk$set(warning = FALSE)
+  knitr::opts_chunk$set(fig.height = 6, fig.width = 8, out.width = '80%', fig.align = "center")
+  knitr::opts_chunk$set(fig.pos = "H", out.extra = "")
+  options(width = 100)
+```
+
+```{css, echo=FALSE}
+.solution {
+background-color: #CCDDFF;
+}
+```
+
+\newpage 
+
+# Urban Transportation [50 points]
+
+## Freeway Congestion [35 points]
+
+The relationship between commuting cost $g$ (**in hundreds**) and $T$ (**in thousands**) is shown in the figure below, with some degree of poetic license. The monthly commuting cost per driver when the freeway is not congested (i.e., when there are less than **$\bar{T}=500$** cars at the same time) is **$300**. The commuting cost function when the freeway is congested is given by $g(T)=T^{2}+3$, and the demand functional form at the rush-hour is $D=5-T$. Assume $T>0$ and $n=2,000$ commuters in total using either the freeway or the alternate routes.
+
+```{r, echo=F}
+library(tidyverse)
+library(ggthemes)
+ggplot(data =data.frame(x = c(0,2), y=(0:5)) , aes(y,x)) +
+  geom_segment(aes(x=0, xend=.5, y=3, yend=3), 
+              size=1.2)+
+  geom_curve(aes(x = .5, y = 3, xend = 2, yend = 5,colour="g(T)"),
+          curvature = 0.2, angle = 45 ,lwd=1.2)+
+  geom_abline(aes(intercept = 5, slope = -1.6, colour="Demand"), size=1.2)+
+  geom_segment(aes(x=.5,xend=.5, y=0 ,yend=3), linetype="AA", lwd=1.2)+
+ scale_x_continuous(limits = c(0,2.5), breaks=c(0,.5,1.5,2), expand = c(0, 0)) +
+scale_y_continuous(limits = c(0,5), expand = c(0, 0)) +
+  theme_economist_white(gray_bg = F)+
+  theme(text = element_text(size=20))+
+  xlab("T (in thousands)") + 
+  ylab("$ (in hundreds)")+
+  labs(color='')
+```
+
+### a) What are the aggregate cost and the marginal cost of using the freeway as a function of $T$?
+
+The aggregate cost is T * g(T) = T^3 + 3T
+The marginal cost is T^2 + 3 + 2T^2 = g(T) + Tg'(T)
+
+
+### b) What is the number of cars using the freeway when there is no congestion pricing (free market equilibrium)? Also, compute the total commuting cost in this scenario: the cost of using the freeway + the alternate costs. 
+*Hint:* find the area below the $MC$ curve from .5 to $T_{eq}$. Find the area below the demand curve from $T_{eq}$ to 2. Finally, find the area of the rectangle from 0 to $\bar{T}$. The sum of those areas is the total commuting cost. 
+
+In order to find $T_{eq}$ (the intercept point of demand and supply curve (average cost)). 5 - T = T^2 + 3, solving for T, we get T = 1. The number of cars using the freeway sans congestion pricing is 1000. 
+
+The total commuting cost is found by finding the area under the MC curve from 0 to 1 and adding it to the area under the demand curve from 1 to 2. 
+
+Therefore, the cost is: 0.5 * 3 + integral T^2 + 3 + 2T^2 dt + integral 5 - T dt= 7.375. 
+The first integral from 0.5 to 1 and the second from 1 to 2. 
+
+The total commuting cost is $737.50. 
+
+### c) What is the optimal number of cars $T_{opt}$ using the freeway? Also, compute the total commuting cost in this scenario. 
+
+*Hint:* same as before, but now use $T_{opt}$ instead of $T_{eq}$.
+
+In order to find $T_{opt}$, which is the intercept point of the demand and supply curve (marginal cost). 5 - T = T^2
++ 3 + 2T^2. Solving for T, we get T = 0.667. Therefore, the social optimal number of cars using the freeway is 667. 
+
+The total commuting cost is the area under the marginal cost curve from 0 to 0.667 and the area under the demand curve from 0.667 to 2. Cost = 0.5 * 3 + integral T^2 + 3 +2T^2 dt + integral 5 - T dt = 7.06. 
+
+The first integral being from 0.5 to 0.667 and the second from 0.667 to 2. 
+The total commuting cost is $706. 
+
+
+### d) Suppose the mayor wants to impose a congestion toll to reach the optimal number of drivers using the freeway. Find the value of the congestion toll that must be charged to achieve $T_{opt}$ freeway commuters at the rush-hour.  
+When T = 0.667, we plug that into the Average Cost Curve. This gives a cost of 3.44. When we plug T into the Marginal Cost Curve, cost is equal to 4.33. The congestion toll is equal to 4.33 - 3.44 = 0.89. Therefore, the monthly congestion toll is $89. 
+
+
+### e) Assume that the mayor wants to avoid congestion at the rush-hour imposing the following restriction: only cars from 1 to 500 would be allowed to commute using the freeway. It is your duty as a good economist to give some advice to him on that matter. What do you say to him?  
+
+*Hint*: compare the total commuting costs between the scenario where there are $T_{opt}$ cars with the one that has 500 cars.  
+
+The total commuting cost will be higher when compared to $T_{opt}$. Using 0.5 * 3 + integral$5 - T dt  = 7.125. 
+The integral being from 0.5 to 2. The total commuting is equal to = $712.5, which is greater than 706.
+
+
+## Commuting Time in the U.S. [15 points]
+Let's find out where are America's longest and fastest travel times to work. [Here](https://github.com/guerramarcelino/UrbanEconomics/raw/master/Datasets/commute.rar) you have a shapefile that contains the average commute time per U.S. county (excluding Hawaii and Alaska) based on the American Community Survey 2014-18. What are the top five and bottom five counties in terms of commute time? What is America's average travel time to work? Finally, map the spatial distribution of commuting to work in U.S. counties.
+
+```{r, include=FALSE}
+libs <- c("tigris","rgdal", "maptools", "reshape", "sp", "spdep", "GISTools", "ggplot2", "tidyverse", "tmap", "viridis","plyr")
+lapply(libs, require, character.only = TRUE)
+```
+
+```{r, comment=FALSE, message=F}
+comm = readOGR("commute_time.shp", layer="commute_time")
+```
+
+These are the five longest commute times to work. 
+```{r}
+head(comm@data%>%arrange(desc(comm@data$mean_tt)),n=5)
+```
+
+These are the five fastest commute times to work. 
+```{r}
+head(comm@data%>%arrange(comm@data$mean_tt),n=5)
+```
+
+The average American travel time spent on the way to work is 23.6792. 
+```{r}
+travel_time = comm@data$mean_tt
+mean(travel_time, na.rm = T)
+```
+
+```{r}
+library(tmap)
+tm_shape(comm)+tm_borders(lwd = 2, col = "white", alpha = .4)+
+  tm_polygons("mean_tt", style="quantile",
+              alpha=0.7, palette = "-viridis",
+              title="Travel Times to Work")+
+  tm_legend(legend.title.size = 1.2, legend.text.size = 1,
+            legend.position = c("right", "bottom"))+
+  tm_layout(inner.margins = c(0.10, 0.02, 0.02, 0.10))
+```
+
+
+\newpage
+
+# Housing [25 points]
+
+## Vanilla Version of Hedonic Regression [15 points]
+Using this [data](https://github.com/guerramarcelino/UrbanEconomics/raw/master/Datasets/kc_data) on house sales in King County-WA (May-Dec 2014), estimate a hedonic housing price regression using the `lm()` function - you can find the original dataset [here](https://geodacenter.github.io/data-and-lab/KingCounty-HouseSales2015/). The dependent variable is `price`, and all the other columns are treated as explanatory variables (**ignore the variable** `geometry`). You are required to answer the following questions, **but free to highlight any result you find interesting**:
+
+```{r}
+housing = readRDS(file = "kc_data")
+mod = lm(price~id + bathrooms + sqft_liv +
+        sqft_lot + waterfront + view +
+          condition + grade + dist +
+          basement + renov + age,
+        data = housing)
+summary(mod)
+```
+
+### a) What is the implicit price of `number of bathrooms`? 
+
+According to the regression above, the implicit price of number of bathrooms is $2.735e+04$. This means that the housing price will increase by this much if there was one more bathroom. 
+
+### b) By how much a house value raises with an increase of 10 square feet in the size of living area? 
+
+If we increase the square feet of living area by one, housing price goes up by $1.845e+02$. If we multiply this number by ten, the housing price will go up by $1.845e+03$
+
+### c) Do older houses worth less than newer homes on average? 
+
+Based on the regression, the coefficient is postitive. This means that the older a house is, the more valueable it is. 
+
+### d) Does the implicit price of distance from downtown agree with the Monocentric City Model? Why?  
+
+The coefficient for distance is negative. This means that as houses get further away from downtown, they lose value. This is a fundamental of the monocentric city model, stating that houses near downtown are far more expensive. 
+
+
+```{r, include=T, echo=F}
+library(kableExtra)
+Variable<-c("id","price", "bathrooms", "sqft_liv", "sqft_lot", "waterfront", "view", "condition", "grade", "dist",  "basement", "renov", "age")
+Definition<-c("Identification", "Sale price", "Number of bathrooms", "Size of living area in square feet", "Size of the lot in square feet", "‘1’ if the property has a waterfront, ‘0’ if not", "An index from 0 to 4 of how good the view of the property was" ,"Condition of the house, ranked from 1 to 5", "Refers to the types of materials used and the quality of workmanship. Buildings of better quality have higher grade", "Distance from downtown Seattle", "'1' if the property has a basement, '0' if not", "'1' if the property was renovated in the last 10 years, '0' if not", "Age of the property")
+df<-data.frame(Variable, Definition)
+kbl(df, digits=2, caption = "Variables Description", booktabs = T) %>%
+kable_styling(latex_options = c("striped", "HOLD_position"))%>%
+  column_spec(2, width = "12cm")
+```
+	
+
+
+## Tenure Choice [10 points]
+
+In this question, use the model with accelerated depreciation deduction and assume the following parameters: $i=0.03$, $h=0.02$, $d=0.02$, $g=0.04$, $e=0.02$ and $\lambda = 0.35$.
+
+### a) Compute the tax rate $\hat{\tau}$ that separates renters and owner-occupiers
+
+Owner-Occupier User-Cost Curves:
+$((1-\tau(i+h)+d-g)v$=$((1-\tau)(0.03+0.02)+0.02-0.04)v=-0.05*(\tau-0.6)*v$\
+
+Renters Cost Curve
+$(i+h+d-g)v-(\lambda*ev)/(1-\lambda)$=$(0.03+0.02+0.02-0.04)v-(0.35*0.02*v)/(1-0.35)$=$0.0192*v
+
+Using the intercept of these two curves, we find the (tax rate) $\hat{\tau}$ is 0.215. 
+
+### b) Suppose $\lambda$ increases to 0.40. What is the new $\hat{\tau}$? Give an intuitive explanation for your answer - what happens with the housing tenure choice graph?
+
+If $\lambda$ rises to 0.40, (meaning the landlord's income tax increases to 0.4, then less people will opt to pay for their own home because they have less real income. The renter's user cost curve will shift down in the housing tenure choice graph. 
+
+\newpage
+
+# Mapping US Tech-Hubs [30 points]
+
+One way to map innovation is to look at the number of patents per resident. Of course, this is an imperfect measure of innovation since not all new ideas are patented, and not all patents turn into valuable innovations. However, we are going to use that measure as a proxy of innovative activity. Consider tech-hubs the areas with a high/very-high number of patents per capita.
+
+The United States Patent and Trademark Office provides a [periodic tabulation of patent data](https://www.uspto.gov/web/offices/ac/ido/oeip/taf/countyall/usa_county_gd.htm), and you can find this information in a `.RDS` file [here](https://github.com/guerramarcelino/UrbanEconomics/raw/master/Datasets/patentsUS).
+
+## Patents per 100,000 population [10 points]
+
+### a) Using tidycensus, find the ACS 2015 5-year estimate of the total population per county. This time, we want to add the option `geometry = T` inside the `get_acs()` function
+
+*Hint*: load the variables and find the one related to `TOTAL POPULATION`.
+
+```{r, include=T}
+patents = readRDS("patentsUS")
+library("tidycensus")
+acs_2015 = load_variables(year = 2015, "acs5")
+total_pop = get_acs(geography = "county", geometry = T,
+              variables = "B01003_001", year = 2015, 
+              shift_geo = TRUE, output="wide")
+head(total_pop, n = 5)
+```
+
+### b) Merge the datasets of patents and total population while keeping all the counties from the ACS data
+
+*Hint*: you have more counties in the ACS data (3,220) than in the patents data (3,019), so use `left_join()`. You are going to get NAs related to patent information for 201 counties.   
+
+```{r}
+require(tidyverse)
+merged_data=left_join(total_pop, patents, by="GEOID")
+View(merged_data)
+merged_data = left_join(total_pop, patents)
+sum(is.na(merged_data$'State or Territory'))
+```
+
+### c) Calculate the total number of patents in 2000-2015 (column `Total`) per 100,000 population. What are the top five and bottom five counties in terms of innovativeness?
+
+```{r}
+merged_data$patents_cap = (merged_data$Total/merged_data$B01003_001E)*100000
+```
+
+
+Top Five
+
+```{r}
+merged_data%>%arrange(desc(patents_cap))%>%slice(1:5)
+```
+
+Bottom five
+
+```{r}
+merged_data%>%arrange(patents_cap)%>%slice(1:5)
+```
+## Mapping data using tmap+tidycensus [20 points]
+
+Using tidycensus with the option `geometry = T`, one can get coordinates of the desired areas (in our case, counties). Then, to map the data is straightforward - treat your data as a shapefile [tm_shape(your_data)+...+...](https://guerramarcelino.github.io/Econ414/lab3). 
+
+### a) Use `tmap` to map the patents per 100,000 population in U.S. counties. Are the tech-hubs randomly distributed over space? What do you see?
+
+```{r}
+require(tidycensus)
+tmap_mode("plot")
+tm_shape(merged_data)+tm_borders(lwd = 2, col = "white", alpha = .4)+
+  tm_polygons("Total", style= "quantile",palette = "BuPu",
+              title="Patents")+
+  tm_legend(legend.title.size = 1, legend.text.size = .8,
+            legend.position =c("left", "top"))+
+  tm_layout(title="Patents per 100,000 population in US counties",
+              title.position = c("center", "top"),
+              title.size = 1.1)+
+  tm_layout(inner.margins = c(0.02, 0.20, 0.10, 0.02))
+```
+
+### b) Tech-hubs have at least one thing in common: a very skilled labor force. That means the geographical distribution of skilled people is similar to the distribution of tech-hubs in U.S. counties. And here is the question: summarize [Rebecca Diamond's take on US workers' diverging locations by skill](https://microeconomicinsights.org/causes-consequences-us-workers-diverging-locations-skill/), and try to relate it with what you know about the role of innovation jobs and the geographical distribution of tech-hubs in the US.   
+
+
+Rebecca Diamond's article observes the phenomenon of the divergence of locations between low-skilled workers (i.e. high school graduates) and high-skilled workers (i.e. college graduates). She observes the pattern for a number of years starting in the late 20th century to now. The pattern is quite clear. High skilled workers are far more willing to pay higher living expenses in exchange for a higher amount of amenities. The migration of these college students to these places with amenities serves to have large spillovers on creating desirable amenities and this in turn, attracts more of those workers and drives out others. It is not that lower-skilled workers don't want these amenities; they are just not willing to pay a higher expense in order to attain them. This causes these lower-skilled workers to migrate to areas with cheaper housing and by default less amenities. These areas usually present themselves in the form of less-developed areas. 
+
+If we use the last map as an example, we see that the concentration of technological hubs are in the Bay Area, as well as on the East Coast. Due to these areas being technological hubs, they are also large centers for innovation. These high-skilled workers flock to these innovation jobs and cluster due to knowledge spillover and these jobs work to raise the productivity of the country. 
+
+
+
+
+
+
+
