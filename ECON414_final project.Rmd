@@ -1,0 +1,359 @@
+---
+title: 'ECON 414: Final Project'
+author: "Ellen Barczak, Xinhao Liu, Dhara Patel, and Abhinav Singh"
+date: "12/19/2020"
+output:
+ bookdown::html_document2:  
+  toc: true # table of content true
+  toc_depth: 2  # upto three depths of headings (specified by #, ## and ###)
+  theme: united  # many options for theme, this one is my favorite.
+  highlight: tango  # specifies the syntax highlighting style
+  fontsize: 16pt
+---
+
+```{r setup, include=FALSE}
+  knitr::opts_chunk$set(
+	echo = FALSE,
+	fig.align = "center",
+	fig.height = 5,
+	fig.width = 7,
+	message = FALSE,
+	warning = FALSE,
+	out.width = "100%"
+)
+  # TRUE for solution; FALSE for questions set
+  knitr::opts_chunk$set(echo = TRUE)
+  knitr::opts_chunk$set(message = FALSE)
+  knitr::opts_chunk$set(warning = FALSE)
+  knitr::opts_chunk$set(fig.height = 5, fig.width = 7, out.width = '100%', fig.align = "center")
+  options(width = 90)
+```
+
+# Introduction
+
+According to the World Health Organization (WHO), as of May 15, there have been more than 4
+million 300 thousand coronavirus cases worldwide, and more than 290,000 deaths. Chicago is one of the metropolitan area among the world, and it is the main area that we conducted our research on in this project. We want to discover the pattern of the positive and death rates in the Chicago area, and finding the hot and cold spots in Chicago.\
+
+This plot shows the trend of deaths in Chicago since the breakout of COVID until 11/28/2020.
+
+```{r, echo=F, message=F,fig.height = 4, fig.width = 5}
+library(ggplot2)
+library(ggthemes)
+library(plotly)
+data<-readRDS("weekly.RDS")
+data$WeekEnd<-as.Date(data$WeekEnd)
+p1<-ggplot(data =data, aes(x = WeekEnd, y = deaths))+
+    theme_economist_white(base_size = 14, gray_bg = FALSE) + scale_colour_economist() +
+    geom_line(size = 1.4) +
+    labs(x = "Date", y="Total number of deaths")+
+    scale_x_date(date_labels = "%m/%d", date_breaks="4 weeks")
+
+ggplotly(p1)
+```
+
+# Exploratory Spatial Data Analysis
+## Covid maps
+```{r include=FALSE}
+libs<-c("tidyverse","GISTools","rgdal","spdep", "sp","ggplot2","ggthemes", "viridis", "tidyverse", "ggmap", "tmap")
+lapply(libs, require, character.only = TRUE)
+```
+
+This map shows the geographical distribution of Covid case rate (positive rate) in the Chicago area. \
+Covid case rate is calculated by dividing total case with total population * 100,000.\
+
+```{r echo=FALSE}
+# read shapefile
+chi_co<-readOGR("covid19_chitown.shp",layer="covid19_chitown")
+
+# maping covid cases in Chicago area
+# total case rate total case/total pop * 100,000
+tmap_mode("view")
+tm_shape(chi_co)+
+  tm_polygons("Caserate",
+              alpha=0.7,
+              palette = "YlGnBu", 
+              title="Case rates", 
+              popup.vars=c("Total Population"="TotalPop", 
+                           "Total cases "="Totalcase", 
+                           "Total death"="Totaldeath" ))+
+  tm_basemap(server="OpenStreetMap",alpha=0.5)
+
+```
+
+This map shows the geographical distribution of Covid death rate in the Chicago area. \
+Covid death rate is calculated by dividing total death with total population * 100,000.\
+```{r echo=FALSE}
+# read shapefile
+chi_co<-readOGR("covid19_chitown.shp",layer="covid19_chitown")
+
+# maping covid cases in Chicago area
+# total case rate total case/total pop * 100,000
+tmap_mode("view")
+tm_shape(chi_co)+
+  tm_polygons("Deathrate",
+              alpha=0.7,
+              palette = "YlGnBu", 
+              title="Death rates", 
+              popup.vars=c("Total Population"="TotalPop", 
+                           "Total cases "="Totalcase", 
+                           "Total death"="Totaldeath" ))+
+  tm_basemap(server="OpenStreetMap",alpha=0.5)
+
+```
+
+## Defining proximity
+To further study Covid case rates and death rates' spatial autocorrelation, we need to define proximity and run the Moran's test. By doing so, we can distinguish the hot spots (high positive and death rate) and cold spots (low positive and death rate) in the Chicago area.\
+
+In this analysis, the proximity is defined using a distance-based criterion, the k-nearest neighbor criterion; k = 3 was adopted. Since there are only 58 zip codes in the Chicago area, k = 3 would be an appropriate number of "neighbors" we pick for each area. If we use k = 10, we will have too many neighboring areas for each zip code. Moreover, using k = 3 will also have a similar result if we are using Rook or Queen to define proximity. \
+
+The following plot shows the 3-nearest neighbors for Chicago area.\
+
+```{r echo=FALSE}
+# defining proximity with distance-based criterion
+coords<-coordinates(chi_co)
+# explain why use 3
+knn<-knearneigh(coords, k = 3, longlat = TRUE)
+knn_nb<-knn2nb(knn)
+plot(chi_co, main="3-nearest neighbors")  
+plot(knn_nb, coords=coordinates(chi_co), 
+     pch = 19, cex=.8, 
+     add = TRUE, col= "red")
+knn_listw <- nb2listw(knn_nb,style="W")
+```
+
+## Moran's test for case rate
+In this section, we ran the Moran's test for case rate in the Chicago area to find the "hot spots" and "cold spots".\
+
+The scatterplot of the case rate and the spatially lagged case rates shows a positive spatial autocorrelation.\ 
+```{r echo=FALSE}
+knn_mat<-nb2mat(knn_nb, style="W")
+spat_lag<-knn_mat%*%chi_co$Caserate
+chi_co$w_caserate<-lag.listw(knn_listw, chi_co$Caserate)
+
+library(plotly)
+g1<-ggplot(chi_co@data, aes(x=Caserate, y=w_caserate, label=GEOID)) + geom_point(color="darkorange")+
+  stat_smooth(method = "lm", formula =y~x, se=F, color="darkblue") +
+  scale_y_continuous(name = "Spatially lagged case rate") +
+  scale_x_continuous(name = "Case rate")+
+  theme_economist_white(base_size = 17, gray_bg=FALSE)+
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=12,face="bold"))
+
+ggplotly(g1, tooltip = c("label", "x", "y"))
+```
+
+After running the Moran's test, the test statistic is 0.3193. According to the result, 0.3193 was inside the critical region, and we can reject the null hypothesis: the data is not randomly distributed over space. \
+```{r echo=FALSE}
+moran.mc(chi_co$Caserate, knn_listw, 999)
+
+chi_co$caserate_std<-scale(chi_co$Caserate)%>%as.vector()
+#moran.plot(chi_co$caserate_std, listw = knn_listw, xlab = "Case rate", ylab="Spatially lagged case rate")
+```
+
+From the LISA map, we can see these hot spots of case rate in the Chicago area.  There are four hot-spots in total, which means the positive cases are spatially autocorrelated there; a high positive area surrounds high positive rate areas. \
+```{r echo=FALSE}
+# LISA
+locali<-as.data.frame(localmoran(chi_co$Caserate, knn_listw, alternative = "two.sided", p.adjust.method="fdr"))
+
+chi_co$localp<-locali[,5]
+
+chi_co$w_caserate_std<-scale(chi_co$w_caserate)
+
+chi_co$label <- NA
+chi_co$label[chi_co$caserate_std >= 0 & chi_co$w_caserate_std >= 0 & chi_co$localp <= 0.05] <- "High-High"
+chi_co$label[chi_co$caserate_std <= 0 & chi_co$w_caserate_std <= 0 & chi_co$localp <= 0.05] <- "Low-Low"
+chi_co$label[chi_co$caserate_std >= 0 & chi_co$w_caserate_std <= 0 & chi_co$localp <= 0.05] <- "High-Low"
+chi_co$label[chi_co$caserate_std <= 0 & chi_co$w_caserate_std >= 0 & chi_co$localp <= 0.05] <- "Low-High"
+chi_co$label[chi_co$localp > 0.05] <- "Not Significant" 
+
+unique(chi_co$label)
+
+tm_shape(chi_co)+
+  tm_polygons("label",  
+              palette = c("red3", "skyblue",  "#FFFFFF") ,
+              alpha=0.4, 
+              title="LISA map - Case rate",
+              popup.vars=c("Total Population"="TotalPop", 
+                           "Total cases "="Totalcase", 
+                           "Total death"="Totaldeath" ))+
+  tm_basemap(server="OpenStreetMap",alpha=0.5)
+```
+
+
+And here is the interactive Moran's scatterplot for the case rate. \
+```{r echo=FALSE}
+g1<-ggplot(chi_co@data, aes(caserate_std, w_caserate_std,color=label, label=GEOID))+ 
+  theme_fivethirtyeight() +
+  geom_point(size=5)+ 
+  geom_hline(yintercept = 0, linetype = 'dashed')+ 
+  geom_vline(xintercept = 0, linetype = 'dashed')+ 
+  scale_colour_manual(values=c("red3", "skyblue",  "#FFFFFF"))+ 
+  labs(x = "Case rate", y="Spatially Lagged case rate")+ 
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18,face="bold"), legend.text=element_text(size=15))+
+  theme(legend.title=element_blank())+
+  ggtitle("Moran's I: 0.31943")
+
+ggplotly(g1, tooltip = c("label", "x", "y"))
+
+```
+
+## Moran's test for death rate
+In this section, we ran the Moran's test for death rate in the Chicago area to find the "hot spots" and "cold spots".\
+
+The scatterplot of the death rate and the spatially lagged death rates shows a positive spatial autocorrelation.\ 
+```{r echo=FALSE}
+knn_mat<-nb2mat(knn_nb, style="W")
+spat_lag<-knn_mat%*%chi_co$Deathrate
+chi_co$w_deathrate<-lag.listw(knn_listw, chi_co$Deathrate)
+
+library(plotly)
+g2<-ggplot(chi_co@data, aes(x=Deathrate, y=w_deathrate, label=GEOID)) + geom_point(color="darkorange")+
+  stat_smooth(method = "lm", formula =y~x, se=F, color="darkblue") +
+  scale_y_continuous(name = "Spatially lagged death rate") +
+  scale_x_continuous(name = "Death rate")+
+  theme_economist_white(base_size = 17, gray_bg=FALSE)+
+  theme(axis.text=element_text(size=12),
+        axis.title=element_text(size=12,face="bold"))
+
+ggplotly(g2, tooltip = c("label", "x", "y"))
+```
+
+After running the Moran's test, the test statistic is 0.4574. According to the result, 0.4574 was inside the critical region, and we can reject the null hypothesis: the data is not randomly distributed over space. \
+```{r echo=FALSE}
+moran.mc(chi_co$Deathrate, knn_listw, 999)
+
+chi_co$deathrate_std<-scale(chi_co$Deathrate)%>%as.vector()
+#moran.plot(chi_co$caserate_std, listw = knn_listw, xlab = "Case rate", ylab="Spatially lagged case rate")
+```
+
+From the LISA map, we can see these cold spots of death rate in the Chicago area. There are no hot spots, but six cold-spots in total, which means the death rates are spatially autocorrelated there; a low death rate area surrounds high death rate areas. \
+```{r echo=FALSE}
+# LISA
+locali<-as.data.frame(localmoran(chi_co$Deathrate, knn_listw, alternative = "two.sided", p.adjust.method="fdr"))
+
+chi_co$localp<-locali[,5]
+
+chi_co$w_deathrate_std<-scale(chi_co$w_deathrate)
+
+chi_co$label <- NA
+chi_co$label[chi_co$deathrate_std >= 0 & chi_co$w_deathrate_std >= 0 & chi_co$localp <= 0.05] <- "High-High"
+chi_co$label[chi_co$deathrate_std <= 0 & chi_co$w_deathrate_std <= 0 & chi_co$localp <= 0.05] <- "Low-Low"
+chi_co$label[chi_co$deathrate_std >= 0 & chi_co$w_deathrate_std <= 0 & chi_co$localp <= 0.05] <- "High-Low"
+chi_co$label[chi_co$deathrate_std <= 0 & chi_co$w_deathrate_std >= 0 & chi_co$localp <= 0.05] <- "Low-High"
+chi_co$label[chi_co$localp > 0.05] <- "Not Significant" 
+
+unique(chi_co$label)
+
+tm_shape(chi_co)+
+  tm_polygons("label",  
+              palette = c("skyblue",  "#FFFFFF") ,
+              alpha=0.4, 
+              title="LISA map - Death rate",
+              popup.vars=c("Total Population"="TotalPop", 
+                           "Total cases "="Totalcase", 
+                           "Total death"="Totaldeath" ))+
+  tm_basemap(server="OpenStreetMap",alpha=0.5)
+```
+
+
+And here is the interactive Moran's scatterplot for the case rate. \
+```{r echo=FALSE}
+g1<-ggplot(chi_co@data, aes(deathrate_std, w_deathrate_std,color=label, label=GEOID))+ 
+  theme_fivethirtyeight() +
+  geom_point(size=5)+ 
+  geom_hline(yintercept = 0, linetype = 'dashed')+ 
+  geom_vline(xintercept = 0, linetype = 'dashed')+ 
+  scale_colour_manual(values=c("skyblue",  "#FFFFFF"))+ 
+  labs(x = "Death rate", y="Spatially Lagged death rate")+ 
+  theme(axis.text=element_text(size=18),axis.title=element_text(size=18,face="bold"), legend.text=element_text(size=15))+
+  theme(legend.title=element_blank())+
+  ggtitle("Moran's I: 0.4574")
+
+ggplotly(g1, tooltip = c("label", "x", "y"))
+
+```
+
+# Regression Analysis
+## Scatterplots
+In this section, several regression analysis are conducted for better understanding the variation of Covid case and death rates with in neighborhoods. \
+
+The scatterplot here shows the relationship between Poverty and health Insurance rates.\
+We can observe the strong negative relationship in the plot. Poor people has much worse insurance coverage.\
+```{r echo=FALSE}
+#plots establishing relationship between Poverty and Health Insurance rates
+plot(chi_co@data$belowpov, chi_co@data$HIcov, main="Poverty Health Insurance relationship",
+     xlab="Below Poverty Rate ", ylab="Health Insurance Coverage rate ", pch=19)
+abline(lm(chi_co@data$belowpov~chi_co@data$HIcov), col="red") # regression line (belowpov~HIcov)
+```
+
+The scatterplot here shows the relationship between Crowded Households and Population Density.\
+Surprisingly, we can observe the negative relationship in the plot. Crowded households are more likely to be found in low population density areas.\
+```{r echo=FALSE}
+#plots establishing relationship between Crowded Households and Population Density
+plot(chi_co@data$crowdedHH, chi_co@data$popdens, main="Crowded Households and Population Density relationship",
+     xlab="Crowded Household Rate ", ylab="Population Density ", pch=19)
+abline(lm(chi_co@data$popdens~chi_co@data$crowdedHH), col="red") # regression line (crowdedHH~popdens)
+```
+
+## Regressions
+### Data variables
+- `GEOID`: Zip code
+- `TotalPop`: Total population
+- `malepct`: Share of male
+- `above60`: Share of people 60 or older
+- `belowpov`: Share of people living below the poverty line
+- `crowdedHH`: Share of houses with 4 or more people
+- `HIcov`: Share of people with health insurance
+- `popdens`: Population density
+- `Totalcase`: Total COVID-19 cases (until 11/28/2020)
+- `Totaldeath`: Total COVID-19 deaths (until 11/28/2020)
+- `Totaltest`: Total number of tests performed (until 11/28/2020)
+- `testrate_{i}`: The number of tests per 100,000 people in zip code $i$
+- `caserate_{i}`: The number of positive cases per 100,000 people in zip code $i$
+- `deathrate_{i}`: The number of deaths per 100,000 people in zip code $i$
+
+### ECON cases
+Here we get the regression for case rates and death rates for economic related variables.\
+This one includes health insurance, more crowded households, and below poverty line.\
+\begin{equation}
+\text{Case rate}_{i}=1857 + 0.0493 * test rate - 2584 * HIcov + 16580 * crowdedHH - 2559 * belowpov +\varepsilon 
+\end{equation}
+
+\begin{equation}
+\text{Death rate}_{i}=267.2 + 0.000441 * test rate - 294.5 * HIcov + 244.7 * crowdedHH + 169.2 * belowpov +\varepsilon 
+\end{equation}
+```{r include=FALSE}
+chi_co@data$testrate_norm = chi_co@data$Totaltest/chi_co@data$TotalPop * 100000
+caseECON = lm(Caserate ~ testrate_norm + HIcov + crowdedHH + belowpov, data = chi_co@data)
+#summary(caseECON)
+
+deathECON = lm(Deathrate ~ testrate_norm + HIcov + crowdedHH + belowpov, data = chi_co@data)
+#summary(deathECON)
+```
+These results show us a lot. In case ECON we see a high relation between crowded households and cases which was expected as it would spread more quickly in these places. A non significantly relation between HIcov and belowpov was not fully expected, but understandably far less important than our test rate and  crookedness. death ECON on the other hand keeps the relationship with crowded households but also adds belowpov. This makes sense as those who get covid-19 and are in more disadvantageous economic situations will have less resources to deal with the virus. We expected HIcov to be slightly more significant here. Interestingly test rate_norm was not significant here showing that deaths  will be observed regardless.\
+
+### DEMO cases 
+Here we get the regression for case rates and death rates for demographic related variables\
+This includes population density, percentage above 60, and male percentage.\
+\begin{equation}
+\text{Case rate}_{i}=-5275 + 0.009453 * test rate - 0.1649 * popdens + 2742 * above60 + 21750 * malepct +\varepsilon 
+\end{equation}
+
+\begin{equation}
+\text{Death rate}_{i}=334.5 - 0.000484 * test rate - 0.001674 * popdens + 171.1 * above60 - 433.5 * malepct +\varepsilon 
+\end{equation}
+```{r include=FALSE}
+caseDEMO = lm(Caserate ~ testrate_norm + popdens + above60 + malepct, data = chi_co@data)
+#summary(caseDEMO)
+
+deathDEMO = lm(Deathrate ~ testrate_norm + popdens + above60 + malepct, data = chi_co@data)
+summary(deathDEMO)
+```
+Our demographics data also shows some interesting revelations. In case rates we see a significance with population density and malepct, but not above60. While the men part was unexpected, population density makes sense as more people packed up will increase cases. Above60 also makes sense as older people are more likely to be hurt by the virus, but not to catch it. However, running our death demographics regression, we surprisingly get no significant variables. This may be due to lack of sample size and outside factors specific to the Chicago area.
+
+# Final remarks
+**Happy holiday!**
+
+
+
+
